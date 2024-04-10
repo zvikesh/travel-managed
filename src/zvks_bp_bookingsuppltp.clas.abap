@@ -1,0 +1,5 @@
+CLASS zvks_bp_bookingsuppltp DEFINITION PUBLIC ABSTRACT FINAL FOR BEHAVIOR OF zvks_r_traveltp.
+ENDCLASS.
+
+CLASS zvks_bp_bookingsuppltp IMPLEMENTATION.
+ENDCLASS.
