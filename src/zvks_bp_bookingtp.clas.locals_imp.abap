@@ -4,6 +4,10 @@ CLASS lhc_booking DEFINITION INHERITING FROM cl_abap_behavior_handler.
 
     METHODS earlynumbering_cba_Bookingsupp FOR NUMBERING
       IMPORTING entities FOR CREATE Booking\_Bookingsupplements.
+    METHODS get_instance_features FOR INSTANCE FEATURES
+      IMPORTING keys REQUEST requested_features FOR Booking RESULT result.
+    METHODS validatestatus FOR VALIDATE ON SAVE
+      IMPORTING keys FOR booking~validatestatus.
 
 ENDCLASS.
 
@@ -55,6 +59,40 @@ CLASS lhc_booking IMPLEMENTATION.
         ENDLOOP.
 
       ENDLOOP.
+
+    ENDLOOP.
+
+  ENDMETHOD.
+
+  METHOD get_instance_features.
+  ENDMETHOD.
+
+  METHOD validateStatus.
+
+    READ ENTITIES OF ZVKS_R_TravelTP IN LOCAL MODE
+    ENTITY booking
+      FIELDS ( BookingStatus )
+      WITH CORRESPONDING #( keys )
+    RESULT DATA(bookings).
+
+    LOOP AT bookings INTO DATA(booking).
+      CASE booking-BookingStatus.
+        WHEN 'N'.  " New
+        WHEN 'X'.  " Canceled
+        WHEN 'B'.  " Booked
+
+        WHEN OTHERS.
+          APPEND VALUE #( %tky = booking-%tky ) TO failed-booking.
+
+          APPEND VALUE #(
+            %tky = booking-%tky
+            %msg = NEW /dmo/cm_flight_messages( textid = /dmo/cm_flight_messages=>status_invalid
+                                                status = booking-BookingStatus
+                                                severity = if_abap_behv_message=>severity-error )
+            %element-BookingStatus = if_abap_behv=>mk-on
+            %path = VALUE #( travel-TravelID    = booking-TravelID ) ) TO reported-booking.
+
+      ENDCASE.
 
     ENDLOOP.
 

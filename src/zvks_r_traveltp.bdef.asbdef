@@ -15,6 +15,7 @@ authorization master ( instance )
   update;
   delete;
   association _Booking { create; }                      //Child
+  //TBD association _Booking { create (features:instance); }
 
   /* Fields */
 
@@ -26,12 +27,21 @@ authorization master ( instance )
   AgencyId, CustomerID, BeginDate, EndDate, OverallStatus, BookingFee, CurrencyCode;
 
 
-
   /* Validations */
+  validation validateCustomer on save { create; field CustomerID; }
+  validation validateAgency on save { create; field AgencyID; }
+  validation validateDates on save { create; field BeginDate, EndDate; }
+  validation validateStatus on save { create; field OverallStatus; }
 
   /* Determinations */
 
   /* Actions */
+
+  //action ( features: instance ) acceptTravel result [1] $self;    // instance actions
+  //action ( features: instance ) rejectTravel result [1] $self;    // instance actions
+  //factory action copyTravel [1];                                  // instance factory action for copying travel instances
+  //internal action ReCalcTotalPrice;                               // internal action that is called by determinations
+
 
   /* Mapping */
 
@@ -67,8 +77,8 @@ authorization dependent by _Travel
 
   update;
   delete;
-  association _Travel;                                 //Parent
-  association _BookingSupplements { create; }          //Child
+  association _Travel;                                                     //Parent
+  association _BookingSupplements { create ( features : instance ); }          //Child
 
   /* Fields */
 
@@ -84,7 +94,7 @@ authorization dependent by _Travel
 
   /* Validations */
 
-  //validation validateStatus on save { create; field booking_status; }
+  validation validateStatus on save { create; field BookingStatus; }
   //validation validateCurrencyCode on save { create; field currency_code; }
 
 
@@ -133,15 +143,20 @@ authorization dependent by _Travel
   TravelID, BookingID, BookingSupplementID,            //Key Fields: Calculated using Early Numbering
   LastChangedAt;                                       //Admin Fields !TBD: Missing CreatedBy, CreatedAt, LastChangedBy!
 
-  //field ( mandatory )
-
-
+  field ( mandatory )
+  Price, SupplementID;
 
   /* Validations */
 
+
+
   /* Determinations */
 
+
+
   /* Actions */
+
+
 
   /* Mapping */
 

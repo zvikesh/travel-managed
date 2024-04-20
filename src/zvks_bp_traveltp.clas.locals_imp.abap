@@ -3,6 +3,17 @@ CLASS lhc_Travel DEFINITION INHERITING FROM cl_abap_behavior_handler.
 
     METHODS get_instance_authorizations FOR INSTANCE AUTHORIZATION
       IMPORTING keys REQUEST requested_authorizations FOR Travel RESULT result.
+    METHODS validateagency FOR VALIDATE ON SAVE
+      IMPORTING keys FOR travel~validateagency.
+
+    METHODS validatecustomer FOR VALIDATE ON SAVE
+      IMPORTING keys FOR travel~validatecustomer.
+
+    METHODS validatedates FOR VALIDATE ON SAVE
+      IMPORTING keys FOR travel~validatedates.
+
+    METHODS validatestatus FOR VALIDATE ON SAVE
+      IMPORTING keys FOR travel~validatestatus.
     METHODS earlynumbering_create FOR NUMBERING
       IMPORTING entities FOR CREATE travel.
 
@@ -165,6 +176,54 @@ CLASS lhc_Travel IMPLEMENTATION.
 
     ENDLOOP.
 
+  ENDMETHOD.
+
+  METHOD validateAgency.
+  ENDMETHOD.
+
+  METHOD validateCustomer.
+
+    " Read relevant travel instance data
+    READ ENTITIES OF ZVKS_R_TravelTP IN LOCAL MODE
+    ENTITY travel
+     FIELDS ( CustomerID )
+     WITH CORRESPONDING #(  keys )
+    RESULT DATA(travels).
+
+    DATA customers TYPE SORTED TABLE OF /dmo/customer WITH UNIQUE KEY customer_id.
+
+    " Optimization of DB select: extract distinct non-initial customer IDs
+    customers = CORRESPONDING #( travels DISCARDING DUPLICATES MAPPING customer_id = CustomerID EXCEPT * ).
+    DELETE customers WHERE customer_id IS INITIAL.
+    IF customers IS NOT INITIAL.
+
+      " Check if customer ID exists
+      SELECT FROM /dmo/customer FIELDS customer_id
+        FOR ALL ENTRIES IN @customers
+        WHERE customer_id = @customers-customer_id
+        INTO TABLE @DATA(customers_db).
+    ENDIF.
+    " Raise msg for non existing and initial customer id
+    LOOP AT travels INTO DATA(travel).
+      IF travel-CustomerID IS INITIAL
+         OR NOT line_exists( customers_db[ customer_id = travel-CustomerID ] ).
+
+        APPEND VALUE #(  %tky = travel-%tky ) TO failed-travel.
+        APPEND VALUE #(  %tky = travel-%tky
+                         %msg      = NEW /dmo/cm_flight_messages(
+                                         customer_id = travel-CustomerID
+                                         textid      = /dmo/cm_flight_messages=>customer_unkown
+                                         severity    = if_abap_behv_message=>severity-error )
+                         %element-CustomerID = if_abap_behv=>mk-on
+                      ) TO reported-travel.
+      ENDIF.
+    ENDLOOP.
+  ENDMETHOD.
+
+  METHOD validateDates.
+  ENDMETHOD.
+
+  METHOD validateStatus.
   ENDMETHOD.
 
 ENDCLASS.
